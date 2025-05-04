@@ -2,8 +2,15 @@
 
 To run the demo do the following steps:
 
-- create and activate python virtual environment
-- install [`requirements.txt`](requirements.txt)
-- run `python` [`pipeline_local_fork_demo.py`](data-processing-lib/src/data_processing/examples/pipeline/spark/pipeline_local_fork_demo.py)
-- to check results run:
-`python` [`show-results.py`](/data/revital/revit13-ai-alliance/dpk-alliance/data-processing-lib/src/data_processing/examples/pipeline/spark/show-results.py)
+- Create and activate python virtual environment
+- Install dependencies from requirements.txt:
+```bash
+pip install --r requirements.txt
+````
+- Set the Hugging Face token as environment variable: 
+```bash
+HF_TOKEN=<TOKEN>
+```
+- Run the demo script: `python` [`pipeline_local_fork_demo.py`](./src/data_processing/examples/pipeline/spark/pipeline_local_fork_demo.py)
+- To view the results, run:
+`python` [`show-results.py`](./src/data_processing/examples/pipeline/spark/show-results.py)
