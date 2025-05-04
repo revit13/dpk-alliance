@@ -11,4 +11,10 @@ from data_processing.examples.resize.python.resize_transform import (
     ResizeTransform,
     ResizeTransformConfiguration,
     ResizePythonTransformConfiguration,
+    Resize1TransformConfiguration,
+    Resize1PythonTransformConfiguration,
+    Resize2TransformConfiguration,
+    Resize2PythonTransformConfiguration,
+    Resize3TransformConfiguration,
+    Resize3PythonTransformConfiguration,
 )

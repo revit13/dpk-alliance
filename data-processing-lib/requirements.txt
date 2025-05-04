@@ -6,6 +6,12 @@
   psutil
   polars>=1.9.0
   huggingface-hub>=0.25.2
-  ray[default]>=2.36.1
+  #ray[default]>=2.36.1
   fastapi>=0.110.2
   pillow>=10.3.0
+  # for demo
+  pyspark
+  pandas
+  duckdb
+  fasttext
+  langcodes

@@ -33,4 +33,5 @@ class DefaultPythonTransformRuntime(TransformRuntime):
         :param files - list of files to process
         :return: dictionary of transform init params
         """
-        return self.params
+        #return self.params
+        return self.params | {"data_access_factory": data_access_factory} | {"statistics": statistics}

@@ -50,7 +50,7 @@ class AbstractTransformFileProcessor:
         :param f_name: file name
         :return: None
         """
-        self.logger.debug(f"Begin processing file {f_name}")
+        self.logger.info(f"Begin processing file {f_name}")
         if self.data_access is None:
             self.logger.warning("No data_access found. Returning.")
             return
@@ -69,7 +69,7 @@ class AbstractTransformFileProcessor:
             self._publish_stats({"source_files": 1, "source_size": len(filedata)})
         # Process input file
         try:
-            self.logger.debug(f"Begin transforming file {f_name}")
+            self.logger.info(f"Begin transforming file {f_name}")
             if not self.is_folder:
                 # execute local processing
                 out_files, stats = self.transform.transform_binary(
@@ -82,7 +82,7 @@ class AbstractTransformFileProcessor:
             else:
                 out_files, stats = self.transform.transform(folder_name=f_name)
                 self.last_file_name = f_name
-            self.logger.debug(
+            self.logger.info(
                 f"Done transforming file {f_name}, got {len(out_files)} files"
             )
             # save results
@@ -113,19 +113,19 @@ class AbstractTransformFileProcessor:
         if self.last_file_name is None:
             # for some reason a given worker never processed anything. Happens in testing
             # when the amount of workers is greater than the amount of files
-            self.logger.debug(
+            self.logger.info(
                 "skipping flush, no name for file is defined or this is a folder transform"
             )
             return
         try:
             t_start = time.time()
             # get flush results
-            self.logger.debug(
+            self.logger.info(
                 f"Begin flushing transform, last file name {self.last_file_name}, "
                 f"last index {self.last_file_name_next_index}"
             )
             out_files, stats = self.transform.flush_binary()
-            self.logger.debug(f"Done flushing transform, got {len(out_files)} files")
+            self.logger.info(f"Done flushing transform, got {len(out_files)} files")
             # Here we are using the name of the last file, that we were processing
             self._submit_file(t_start=t_start, out_files=out_files, stats=stats)
         except Exception as e:
@@ -142,14 +142,14 @@ class AbstractTransformFileProcessor:
         :param stats: execution statistics to populate
         :return: None
         """
-        self.logger.debug(
+        self.logger.info(
             f"submitting files under file named {self.last_file_name}{self.last_extension} "
             f"number of files {len(out_files)}"
         )
         match len(out_files):
             case 0:
                 # no output file - save input file name for flushing
-                self.logger.debug(
+                self.logger.info(
                     f"Transform did not produce a transformed file for "
                     f"file {self.last_file_name}.parquet"
                 )
@@ -174,7 +174,7 @@ class AbstractTransformFileProcessor:
                         path=f"{lfn}{file_ext[1]}"
                     )
                     dt = file_ext[0]
-                self.logger.debug(
+                self.logger.info(
                     f"Writing transformed file {self.last_file_name}{self.last_extension} to {output_name}"
                 )
                 save_res, retries = self.data_access_output.save_file(
@@ -218,7 +218,7 @@ class AbstractTransformFileProcessor:
                         output_name_indexed = (
                             f"{output_file_name}_{start_index + index}{file_ext[1]}"
                         )
-                        self.logger.debug(
+                        self.logger.info(
                             f"Writing transformed file {self.last_file_name}{self.last_extension}, {index + 1} "
                             f"of {count}  to {output_name_indexed}"
                         )

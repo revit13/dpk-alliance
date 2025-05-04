@@ -6,6 +6,7 @@ from data_processing.transform import (
     TransformRuntimeConfiguration,
 )
 from data_processing.utils import TransformUtils, UnrecoverableException, get_logger
+logger = get_logger(__name__)
 
 
 class AbstractPipelineTransform(AbstractBinaryTransform):
@@ -27,6 +28,7 @@ class AbstractPipelineTransform(AbstractBinaryTransform):
             # Empty pipeline
             self.logger.error("Pipeline transform with empty list")
             raise UnrecoverableException("Pipeline transform with empty list")
+
         self.data_access_factory = config.get("data_access_factory", None)
         if self.data_access_factory is None:
             self.logger.error("pipeline transform - Data access factory is not defined")
@@ -124,12 +126,12 @@ class AbstractPipelineTransform(AbstractBinaryTransform):
             # Accumulate stats
             stats |= st
             res.append(dt)
-        data = self.merge_fork_results(data=res)
+        data = self.merge_fork_results(data=res, transform=transform)
         return data, stats
 
     @staticmethod
     def merge_fork_results(
-        data: list[list[tuple[bytes, str]]],
+        data: list[list[tuple[bytes, str]]],transform
     ) -> list[tuple[bytes, str]]:
         """
         Merging fork results. We assume only a single fork in the overall pipeline.
@@ -199,7 +201,7 @@ class AbstractPipelineTransform(AbstractBinaryTransform):
                 # Accumulate stats
                 stats |= st
                 partial.append(dt)
-            out_files = self.merge_fork_results(data=partial)
+            out_files = self.merge_fork_results(data=partial, transform=transform)
             if len(out_files) > 0 and i < len(self.participants) - 1:
                 # flush produced output - run it through the rest of the chain
                 data = []

@@ -26,6 +26,15 @@ cli_prefix = f"{shortname}_"
 max_rows_per_table_cli_param = f"{cli_prefix}{max_rows_per_table_key}"
 max_mbytes_per_table_cli_param = f"{cli_prefix}{max_mbytes_per_table_key}"
 size_type_cli_param = f"{cli_prefix}{size_type_key}"
+max_rows_per_table_cli_param1 = f"{cli_prefix}1{max_rows_per_table_key}"
+max_mbytes_per_table_cli_param1 = f"{cli_prefix}1{max_mbytes_per_table_key}"
+size_type_cli_param1 = f"{cli_prefix}1{size_type_key}"
+max_rows_per_table_cli_param2 = f"{cli_prefix}2{max_rows_per_table_key}"
+max_mbytes_per_table_cli_param2 = f"{cli_prefix}2{max_mbytes_per_table_key}"
+size_type_cli_param2 = f"{cli_prefix}2{size_type_key}"
+max_rows_per_table_cli_param3 = f"{cli_prefix}3{max_rows_per_table_key}"
+max_mbytes_per_table_cli_param3 = f"{cli_prefix}3{max_mbytes_per_table_key}"
+size_type_cli_param3 = f"{cli_prefix}3{size_type_key}"
 size_type_disk = "disk"
 size_type_memory = "memory"
 size_type_default = size_type_disk
@@ -48,8 +57,8 @@ class ResizeTransform(AbstractTableTransform):
         if size_type_default in disk_memory:
             self.max_bytes_per_table *= LOCAL_TO_DISK
 
-        self.logger.debug(f"max bytes = {self.max_bytes_per_table}")
-        self.logger.debug(f"max rows = {self.max_rows_per_table}")
+        self.logger.info(f"max bytes = {self.max_bytes_per_table}")
+        self.logger.info(f"max rows = {self.max_rows_per_table}")
         self.buffer = None
         if self.max_rows_per_table <= 0 and self.max_bytes_per_table <= 0:
             raise ValueError(
@@ -63,22 +72,23 @@ class ResizeTransform(AbstractTableTransform):
     def transform(
         self, table: pa.Table, file_name: str = None
     ) -> tuple[list[pa.Table], dict[str, Any]]:
+        print(f"RESIZEEEE {file_name}")
         """
         split larger files into the smaller ones
         :param table: table
         :param file_name: name of the file
         :return: resulting set of tables
         """
-        self.logger.debug(f"got new table with {table.num_rows} rows")
+        self.logger.info(f"got new table with {table.num_rows} rows")
         if self.buffer is not None:
             try:
-                self.logger.debug(
+                self.logger.info(
                     f"concatenating buffer with {self.buffer.num_rows} rows to table with {table.num_rows} rows"
                 )
                 # table = pa.concat_tables([self.buffer, table], unicode_promote_options="permissive")
                 table = pa.concat_tables([self.buffer, table])
                 self.buffer = None
-                self.logger.debug(f"concatenated table has {table.num_rows} rows")
+                self.logger.info(f"concatenated table has {table.num_rows} rows")
             except Exception as _:  # Can happen if schemas are different
                 # Raise unrecoverable error to stop the execution
                 self.logger.warning(
@@ -99,7 +109,7 @@ class ResizeTransform(AbstractTableTransform):
                 if length > self.max_rows_per_table:
                     length = self.max_rows_per_table
                 a_slice = table.slice(offset=start_row, length=length)
-                self.logger.debug(
+                self.logger.info(
                     f"created table slice with {a_slice.num_rows} rows, starting with row {start_row}"
                 )
                 result.append(a_slice)
@@ -112,7 +122,7 @@ class ResizeTransform(AbstractTableTransform):
                 for n in range(table.num_rows):
                     current_size += table.slice(offset=n, length=1).nbytes
                     if current_size >= self.max_bytes_per_table:
-                        self.logger.debug(
+                        self.logger.info(
                             f"capturing slice, current_size={current_size}"
                         )
                         # Reached the size
@@ -122,24 +132,24 @@ class ResizeTransform(AbstractTableTransform):
                         current_size = 0.0
         if start_row < table.num_rows:
             # buffer remaining chunk for next call
-            self.logger.debug(f"Buffering table starting at row {start_row}")
+            self.logger.info(f"Buffering table starting at row {start_row}")
             self.buffer = table.slice(
                 offset=start_row, length=(table.num_rows - start_row)
             )
-            self.logger.debug(f"buffered table has {self.buffer.num_rows} rows")
-        self.logger.debug(f"returning {len(result)} tables")
+            self.logger.info(f"buffered table has {self.buffer.num_rows} rows")
+        self.logger.info(f"returning {len(result)} tables")
         return result, {}
 
     def flush(self) -> tuple[list[pa.Table], dict[str, Any]]:
         result = []
         if self.buffer is not None:
-            self.logger.debug(
+            self.logger.info(
                 f"flushing buffered table with {self.buffer.num_rows} rows of size {self.buffer.nbytes}"
             )
             result.append(self.buffer)
             self.buffer = None
         else:
-            self.logger.debug(f"Empty buffer. nothing to flush.")
+            self.logger.info(f"Empty buffer. nothing to flush.")
         return result, {}
 
 
@@ -223,6 +233,242 @@ class ResizePythonTransformConfiguration(PythonTransformRuntimeConfiguration):
         super().__init__(transform_config=ResizeTransformConfiguration())
 
 
+class Resize1TransformConfiguration(TransformConfiguration):
+    """
+    Provides support for configuring and using the associated Transform class include
+    configuration with CLI args and combining of metadata.
+    """
+
+    def __init__(self):
+        super().__init__(name=shortname, transform_class=ResizeTransform)
+
+    def add_input_params(self, parser: ArgumentParser) -> None:
+        """
+        Add Transform-specific arguments to the given  parser.
+        This will be included in a dictionary used to initialize the resizeTransform.
+        By convention a common prefix should be used for all transform-specific CLI args
+        (e.g, noop_, pii_, etc.)
+        """
+        parser.add_argument(
+            f"--{max_rows_per_table_cli_param1}",
+            type=int,
+            default=-1,
+            help="Max number of rows per table",
+        )
+        parser.add_argument(
+            f"--{max_mbytes_per_table_cli_param1}",
+            type=float,
+            default=-1,
+            help=f"Max table size (MB). Size is measured according to the --{size_type_cli_param1} parameter",
+        )
+        parser.add_argument(
+            f"--{size_type_cli_param1}",
+            type=str,
+            required=False,
+            default=size_type_default,
+            choices=[size_type_disk, size_type_memory],
+            help=f"Determines how memory is measured when using the --{max_mbytes_per_table_cli_param1} option."
+            "\n'memory' measures the in-process memory footprint and \n'disk' makes an estimate of the resulting parquet file size.",
+        )
+
+    def apply_input_params(self, args: Namespace) -> bool:
+        """
+        Validate and apply the arguments that have been parsed
+        :param args: user defined arguments.
+        :return: True, if validate pass or False otherwise
+        """
+        # Capture the args that are specific to this transform
+        captured = CLIArgumentProvider.capture_parameters(args, cli_prefix, False)
+        self.params = self.params | captured
+        # dargs = vars(args)
+        if (
+            self.params.get(max_rows_per_table_key) <= 0
+            and self.params.get(max_mbytes_per_table_key) <= 0
+        ):
+            logger.info(
+                "Neither max documents per table nor max table size are defined"
+            )
+            return False
+        if (
+            self.params.get(max_rows_per_table_key) > 0
+            and self.params.get(max_mbytes_per_table_key) > 0
+        ):
+            logger.info(
+                "Both max documents per table and max table size are defined. Only one should be present"
+            )
+            return False
+        logger.info(f"Split file parameters are : {self.params}")
+        return True
+
+
+class Resize1PythonTransformConfiguration(PythonTransformRuntimeConfiguration):
+    """
+    Implements the RayTransformConfiguration for resize as required by the RayTransformLauncher.
+    """
+
+    def __init__(self):
+        """
+        Initialization
+        """
+        super().__init__(transform_config=Resize1TransformConfiguration())
+
+class Resize2TransformConfiguration(TransformConfiguration):
+    """
+    Provides support for configuring and using the associated Transform class include
+    configuration with CLI args and combining of metadata.
+    """
+
+    def __init__(self):
+        super().__init__(name=shortname, transform_class=ResizeTransform)
+
+    def add_input_params(self, parser: ArgumentParser) -> None:
+        """
+        Add Transform-specific arguments to the given  parser.
+        This will be included in a dictionary used to initialize the resizeTransform.
+        By convention a common prefix should be used for all transform-specific CLI args
+        (e.g, noop_, pii_, etc.)
+        """
+        parser.add_argument(
+            f"--{max_rows_per_table_cli_param2}",
+            type=int,
+            default=-1,
+            help="Max number of rows per table",
+        )
+        parser.add_argument(
+            f"--{max_mbytes_per_table_cli_param2}",
+            type=float,
+            default=-1,
+            help=f"Max table size (MB). Size is measured according to the --{size_type_cli_param1} parameter",
+        )
+        parser.add_argument(
+            f"--{size_type_cli_param2}",
+            type=str,
+            required=False,
+            default=size_type_default,
+            choices=[size_type_disk, size_type_memory],
+            help=f"Determines how memory is measured when using the --{max_mbytes_per_table_cli_param1} option."
+            "\n'memory' measures the in-process memory footprint and \n'disk' makes an estimate of the resulting parquet file size.",
+        )
+
+    def apply_input_params(self, args: Namespace) -> bool:
+        """
+        Validate and apply the arguments that have been parsed
+        :param args: user defined arguments.
+        :return: True, if validate pass or False otherwise
+        """
+        # Capture the args that are specific to this transform
+        captured = CLIArgumentProvider.capture_parameters(args, cli_prefix, False)
+        self.params = self.params | captured
+        # dargs = vars(args)
+        if (
+            self.params.get(max_rows_per_table_key) <= 0
+            and self.params.get(max_mbytes_per_table_key) <= 0
+        ):
+            logger.info(
+                "Neither max documents per table nor max table size are defined"
+            )
+            return False
+        if (
+            self.params.get(max_rows_per_table_key) > 0
+            and self.params.get(max_mbytes_per_table_key) > 0
+        ):
+            logger.info(
+                "Both max documents per table and max table size are defined. Only one should be present"
+            )
+            return False
+        logger.info(f"Split file parameters are : {self.params}")
+        return True
+
+
+class Resize2PythonTransformConfiguration(PythonTransformRuntimeConfiguration):
+    """
+    Implements the RayTransformConfiguration for resize as required by the RayTransformLauncher.
+    """
+
+    def __init__(self):
+        """
+        Initialization
+        """
+        super().__init__(transform_config=Resize2TransformConfiguration())
+
+class Resize3TransformConfiguration(TransformConfiguration):
+    """
+    Provides support for configuring and using the associated Transform class include
+    configuration with CLI args and combining of metadata.
+    """
+
+    def __init__(self):
+        super().__init__(name=shortname, transform_class=ResizeTransform)
+
+    def add_input_params(self, parser: ArgumentParser) -> None:
+        """
+        Add Transform-specific arguments to the given  parser.
+        This will be included in a dictionary used to initialize the resizeTransform.
+        By convention a common prefix should be used for all transform-specific CLI args
+        (e.g, noop_, pii_, etc.)
+        """
+        parser.add_argument(
+            f"--{max_rows_per_table_cli_param3}",
+            type=int,
+            default=-1,
+            help="Max number of rows per table",
+        )
+        parser.add_argument(
+            f"--{max_mbytes_per_table_cli_param3}",
+            type=float,
+            default=-1,
+            help=f"Max table size (MB). Size is measured according to the --{size_type_cli_param1} parameter",
+        )
+        parser.add_argument(
+            f"--{size_type_cli_param3}",
+            type=str,
+            required=False,
+            default=size_type_default,
+            choices=[size_type_disk, size_type_memory],
+            help=f"Determines how memory is measured when using the --{max_mbytes_per_table_cli_param1} option."
+            "\n'memory' measures the in-process memory footprint and \n'disk' makes an estimate of the resulting parquet file size.",
+        )
+
+    def apply_input_params(self, args: Namespace) -> bool:
+        """
+        Validate and apply the arguments that have been parsed
+        :param args: user defined arguments.
+        :return: True, if validate pass or False otherwise
+        """
+        # Capture the args that are specific to this transform
+        captured = CLIArgumentProvider.capture_parameters(args, cli_prefix, False)
+        self.params = self.params | captured
+        # dargs = vars(args)
+        if (
+            self.params.get(max_rows_per_table_key) <= 0
+            and self.params.get(max_mbytes_per_table_key) <= 0
+        ):
+            logger.info(
+                "Neither max documents per table nor max table size are defined"
+            )
+            return False
+        if (
+            self.params.get(max_rows_per_table_key) > 0
+            and self.params.get(max_mbytes_per_table_key) > 0
+        ):
+            logger.info(
+                "Both max documents per table and max table size are defined. Only one should be present"
+            )
+            return False
+        logger.info(f"Split file parameters are : {self.params}")
+        return True
+
+
+class Resize3PythonTransformConfiguration(PythonTransformRuntimeConfiguration):
+    """
+    Implements the RayTransformConfiguration for resize as required by the RayTransformLauncher.
+    """
+
+    def __init__(self):
+        """
+        Initialization
+        """
+        super().__init__(transform_config=Resize3TransformConfiguration())
 if __name__ == "__main__":
     # launcher = NOOPRayLauncher()
     launcher = PythonTransformLauncher(ResizePythonTransformConfiguration())
