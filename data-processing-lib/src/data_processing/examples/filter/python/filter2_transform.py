@@ -26,7 +26,7 @@ from .filter_transform import FilterTransform
 
 logger = get_logger(__name__)
 
-short_name = "1filter"
+short_name = "filter_1_"
 cli_prefix = short_name + "_"
 
 filter_criteria_key = "criteria_list"

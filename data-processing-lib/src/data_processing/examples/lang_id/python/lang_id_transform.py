@@ -72,6 +72,7 @@ class LangIdentificationTransform(AbstractTableTransform):
         This implementation makes no modifications so effectively implements a copy of the
         input parquet to the output folder, without modification.
         """
+        print("--> Lang ID Transform")
         TransformUtils.validate_columns(table, [self.content_column_name])
         if self.output_lang_column_name in table.schema.names:
             raise Exception(f"column to store identified language ({self.output_lang_column_name}) already exist")

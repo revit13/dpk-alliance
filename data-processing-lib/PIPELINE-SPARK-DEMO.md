@@ -5,7 +5,7 @@ To run the demo do the following steps:
 - Create and activate python virtual environment
 - Install dependencies from requirements.txt:
 ```bash
-pip install --r requirements.txt
+pip install -r requirements.txt
 ````
 - Set the Hugging Face token as environment variable: 
 ```bash

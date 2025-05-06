@@ -101,6 +101,7 @@ class DocQualityTransform(AbstractTableTransform):
         Put Transform-specific to convert one Table to 0 or more tables. It also returns
         a dictionary of execution statistics - arbitrary dictionary
         """
+        print("--> DOCQ Transform")
         docq_total_words = []
         docq_mean_word_len = []
         docq_symbol_to_word_ratio = []

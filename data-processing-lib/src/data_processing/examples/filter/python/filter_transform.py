@@ -195,6 +195,7 @@ class FilterTransform(AbstractTableTransform):
         :param table: input table
         :return: list of output tables and custom statistics
         """
+        print("--> Filter Transform")
         if bool(self.input_arrow_folder.strip()):
             TransformUtils.validate_columns(table=table, required=[self.doc_id_column_name])
         if file_name is not None:

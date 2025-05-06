@@ -35,7 +35,7 @@ filter_jp_criteria = [
 ]
 #filter_logical_operator = "AND"
 filter_jp_params = {
-    "1filter_criteria_list": filter_jp_criteria,
+    "filter_1__criteria_list": filter_jp_criteria,
 }
 
 docq_ja = {
